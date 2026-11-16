@@ -27,7 +27,7 @@ class CustomerSupportAssistant:
 
     def __init__(
         self,
-        model_name: str = "gemini-2.5-flash",
+        model_name: str = "gemini-3.8-flash",
         api_key: Optional[str] = None,
         max_retries: int = 2,
     ) -> None:
