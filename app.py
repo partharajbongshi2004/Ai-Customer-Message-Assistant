@@ -24,7 +24,7 @@ def initialize_session_state() -> None:
     """Initializes the assistant instance and UI message history in st.session_state."""
     if "assistant" not in st.session_state:
         st.session_state.assistant = CustomerSupportAssistant(
-            model_name="gemini-2.5-flash"
+            model_name="gemini-3.8-flash"
         )
 
     if "messages" not in st.session_state:
