@@ -1,7 +1,7 @@
 """
 assistant.py
 Core Customer Message Assistant powered by the official google-genai SDK.
-Handles multi-turn chat memory, system instructions, and resilient error handling.
+Handles multi-turn chat memory, system instructions, and detailed API error reporting.
 """
 
 import logging
@@ -79,7 +79,7 @@ class CustomerSupportAssistant:
             customer_message: The raw message text from the customer.
 
         Returns:
-            The assistant's formatted response text, or a polite fallback message on error.
+            The assistant's formatted response text, or the exact API error message on failure.
         """
         cleaned_message = customer_message.strip()
         if not cleaned_message:
@@ -109,27 +109,11 @@ class CustomerSupportAssistant:
                     time.sleep(wait_seconds)
                     continue
 
-                if api_err.code == 400:
-                    return (
-                        "I'm sorry, there was an issue processing that message format. "
-                        "Could you please rephrase your request?"
-                    )
-                if api_err.code in (401, 403):
-                    return (
-                        "[System Configuration Error] Authentication with the AI service failed. "
-                        "Please verify your GEMINI_API_KEY."
-                    )
-
-                return (
-                    "I apologize for the inconvenience—our support assistant is experiencing "
-                    "high traffic right now. Please try again in a moment."
-                )
+                return f"[Gemini API Error {api_err.code}]: {api_err.message}"
 
             except Exception as unexpected_err:
                 logger.exception("Unexpected error during chat inference: %s", unexpected_err)
-                return (
-                    "I'm sorry, a temporary connection issue occurred while processing your message. "
-                    "Please check your internet connection and try again."
-                )
+                return f"[Unexpected Error]: {type(unexpected_err).__name__} - {unexpected_err}"
 
-        return "Unable to reach the assistant after multiple attempts. Please try again later."
+        return "Unable to reach the assistant after multiple attempts."
+
