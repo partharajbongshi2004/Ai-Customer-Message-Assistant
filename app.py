@@ -1,18 +1,15 @@
 """
 app.py
 Clean, modern Streamlit web chat interface for the AI Customer Message Assistant.
-Connects directly to CustomerSupportAssistant in assistant.py without modifying it.
+Reads GEMINI_API_KEY directly from st.secrets and sets os.environ before initializing
+CustomerSupportAssistant.
 """
 
 import os
 import streamlit as st
-from dotenv import load_dotenv
 
 from assistant import CustomerSupportAssistant
 from knowledge_base import BUSINESS_DATA
-
-# Load local .env file if present (useful for local development)
-load_dotenv()
 
 BUSINESS_INFO = BUSINESS_DATA["business_info"]
 
@@ -23,23 +20,11 @@ WELCOME_MESSAGE = (
 )
 
 
-def resolve_api_key() -> str | None:
-    """Retrieves GEMINI_API_KEY from Streamlit secrets first, then environment variables."""
-    try:
-        if "GEMINI_API_KEY" in st.secrets:
-            return st.secrets["GEMINI_API_KEY"]
-    except FileNotFoundError:
-        # No secrets.toml file present; fall back to environment variables
-        pass
-    return os.getenv("GEMINI_API_KEY")
-
-
-def initialize_session_state(api_key: str) -> None:
+def initialize_session_state() -> None:
     """Initializes the assistant instance and UI message history in st.session_state."""
     if "assistant" not in st.session_state:
         st.session_state.assistant = CustomerSupportAssistant(
-            model_name="gemini-2.5-flash",
-            api_key=api_key,
+            model_name="gemini-2.5-flash"
         )
 
     if "messages" not in st.session_state:
@@ -104,17 +89,18 @@ def main() -> None:
         layout="centered",
     )
 
-    api_key = resolve_api_key()
-    if not api_key:
+    try:
+        os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
+    except Exception as secret_err:
         st.error(
-            "**Missing API Key:** `GEMINI_API_KEY` was not found.\n\n"
-            "Please add `GEMINI_API_KEY` to your `.env` file, system environment variables, "
-            "or `.streamlit/secrets.toml` and reload the page."
+            f"**Missing API Key:** Could not load `GEMINI_API_KEY` from `st.secrets` ({secret_err}).\n\n"
+            "Please add `GEMINI_API_KEY = \"your_key_here\"` to `.streamlit/secrets.toml` "
+            "or your Streamlit Cloud Secrets settings."
         )
         st.stop()
 
     try:
-        initialize_session_state(api_key)
+        initialize_session_state()
     except Exception as init_err:
         st.error(f"Failed to initialize the assistant: {init_err}")
         st.stop()
@@ -152,4 +138,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
 
